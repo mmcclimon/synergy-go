@@ -1,9 +1,6 @@
 package channels
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/mmcclimon/synergy-go/internal/slack"
 )
 
@@ -15,14 +12,7 @@ type SlackChannel struct {
 // NewSlack gives you a new slack channel
 func NewSlack() *SlackChannel {
 	channel := SlackChannel{}
-	client, err := slack.NewClient()
-
-	if err != nil {
-		fmt.Println(err.Error())
-		// stupid, but works
-		os.Exit(1)
-	}
-
+	client := slack.NewClient()
 	channel.client = client
 	return &channel
 }
