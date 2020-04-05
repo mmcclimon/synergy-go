@@ -2,6 +2,7 @@ package hub
 
 import (
 	"fmt"
+
 	"github.com/mmcclimon/synergy-go/pkg/channels"
 )
 
@@ -19,6 +20,5 @@ func NewHub(name string) *Hub {
 
 func (hub *Hub) Run() {
 	fmt.Printf("running stuff from hub named %s\n", hub.name)
-	fmt.Println("channels", hub.channels)
 	hub.channels["slack"].Run()
 }

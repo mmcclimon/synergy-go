@@ -11,12 +11,16 @@ type SlackChannel struct {
 
 // NewSlack gives you a new slack channel
 func NewSlack() *SlackChannel {
-	channel := SlackChannel{}
-	client := slack.NewClient()
-	channel.client = client
+	channel := SlackChannel{
+		client: slack.NewClient(),
+	}
+
 	return &channel
 }
 
 func (c *SlackChannel) Run() {
-	c.client.Connect()
+	go c.client.Run()
+	for {
+		// loop forever
+	}
 }
