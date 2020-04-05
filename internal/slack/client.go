@@ -32,6 +32,16 @@ type Client struct {
 	dmChannels         map[string]string // userid => dmChannelId
 }
 
+// Message represents a raw json message from slack
+type Message struct {
+	Type    string
+	TS      string
+	Subtype string
+	Channel string
+	Text    string
+	User    string
+}
+
 type slackUser struct {
 	ID   string
 	Name string
@@ -121,24 +131,15 @@ func (client *Client) connect() {
 }
 
 // Run is the central listen loop,
-func (client *Client) Run() {
+func (client *Client) Run(rawEvents chan<- Message) {
 	if client.ws == nil {
 		client.connect()
 	}
 
 	defer client.ws.Close()
 
-	type slackMessage struct {
-		Type    string
-		TS      string
-		Subtype string
-		Channel string
-		Text    string
-		User    string
-	}
-
 	// is it bad form to reuse this? maybe!
-	var msg slackMessage
+	var msg Message
 
 	for {
 		err := client.ws.ReadJSON(&msg)
@@ -153,7 +154,8 @@ func (client *Client) Run() {
 			continue
 		}
 
-		log.Printf("got message from user %s on channel %s: %s", client.usernameFor(msg.User), msg.Channel, msg.Text)
+		// log.Printf("got message from user %s on channel %s: %s", client.usernameFor(msg.User), msg.Channel, msg.Text)
+		rawEvents <- msg
 	}
 }
 
