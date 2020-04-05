@@ -1,15 +1,14 @@
 package slack
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
@@ -24,9 +23,27 @@ type Client struct {
 	ourName   string
 	ourID     string
 	connected bool
-	isReady   bool
 	ws        *websocket.Conn
-	usernames map[string]string
+
+	// these are all id: pretty-name
+	usernames          map[string]string
+	channels           map[string]string
+	groupConversations map[string]string
+	dmChannels         map[string]string // userid => dmChannelId
+}
+
+type slackUser struct {
+	ID   string
+	Name string
+}
+
+type slackChannel struct {
+	ID        string
+	Name      string // not in DMs
+	User      string // for DMs
+	IsChannel bool   `mapstructure:"is_channel"`
+	IsIM      bool   `mapstructure:"is_im"`
+	IsGroup   bool   `mapstructure:"is_group"`
 }
 
 // NewClient gives you an instance of a slack client (not connected)
@@ -38,10 +55,12 @@ func NewClient() *Client {
 	}
 
 	client := Client{
-		apiKey:    apiKey,
-		connected: false,
-		isReady:   false,
-		usernames: make(map[string]string),
+		apiKey:             apiKey,
+		connected:          false,
+		usernames:          make(map[string]string),
+		channels:           make(map[string]string),
+		dmChannels:         make(map[string]string),
+		groupConversations: make(map[string]string),
 	}
 
 	return &client
@@ -90,18 +109,15 @@ func (client *Client) connect() {
 	}
 
 	client.ws = conn
-	log.Println("connected to Slack!")
+	client.connected = true
+	log.Println("connected to Slack")
 
 	var wg sync.WaitGroup
 
-	wg.Add(3)
+	wg.Add(2)
 	go client.loadUsers(&wg)
-	go client.loadChannels(&wg)
-	go client.loadDMs(&wg)
+	go client.loadConversations(&wg)
 	wg.Wait()
-
-	log.Println("loaded all the things!")
-	client.isReady = true
 }
 
 // Run is the central listen loop,
@@ -160,15 +176,8 @@ func (client *Client) apiAuthHeader() string {
 }
 
 // probably this should also return an err, but will ignore for now
-func (client *Client) apiCall(endpoint string, postData arbitraryJSON) arbitraryJSON {
-	data, err := json.Marshal(postData)
-	if err != nil {
-		log.Fatal("couldn't encode json: ", err)
-	}
-
-	req, _ := http.NewRequest("POST", apiURL(endpoint), bytes.NewBuffer(data))
+func (client *Client) apiCall(req *http.Request) arbitraryJSON {
 	req.Header.Set("Authorization", client.apiAuthHeader())
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 
@@ -186,20 +195,24 @@ func (client *Client) apiCall(endpoint string, postData arbitraryJSON) arbitrary
 	return ret
 }
 
+func (client *Client) apiCallForm(endpoint string, postData map[string]string) arbitraryJSON {
+	vals := url.Values{}
+	for key, val := range postData {
+		vals.Add(key, val)
+	}
+
+	req, _ := http.NewRequest("POST", apiURL(endpoint), strings.NewReader(vals.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	return client.apiCall(req)
+}
+
 func (client *Client) loadUsers(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	postData := make(arbitraryJSON)
-	postData["presence"] = false
+	data := client.apiCallForm("users.list", nil)
 
-	data := client.apiCall("users.list", postData)
-
-	type user struct {
-		ID   string
-		Name string
-	}
-
-	var users []user
+	var users []slackUser
 
 	err := mapstructure.Decode(data["members"], &users)
 	if err != nil {
@@ -217,14 +230,40 @@ func (client *Client) loadUsers(wg *sync.WaitGroup) {
 	log.Println("loaded users")
 }
 
-func (client *Client) loadChannels(wg *sync.WaitGroup) {
+func (client *Client) loadConversations(wg *sync.WaitGroup) {
 	defer wg.Done()
-	time.Sleep(2 * time.Second)
-	log.Println("loaded channels")
-}
 
-func (client *Client) loadDMs(wg *sync.WaitGroup) {
-	defer wg.Done()
-	time.Sleep(1 * time.Second)
-	log.Println("loaded DMs")
+	var postData = map[string]string{
+		"excludeArchived": "true",
+		"types":           "public_channel,mpim,im",
+	}
+
+	data := client.apiCallForm("conversations.list", postData)
+
+	var channels []slackChannel
+	err := mapstructure.Decode(data["channels"], &channels)
+
+	if err != nil {
+		log.Println("error loading channels", err)
+		return
+	}
+
+	for _, channel := range channels {
+		id := channel.ID
+		switch {
+		case channel.IsChannel:
+			client.channels[id] = channel.Name
+
+		case channel.IsGroup:
+			client.groupConversations[id] = channel.Name
+
+		case channel.IsIM:
+			client.dmChannels[channel.User] = id
+
+		default:
+			panic("unknown channel type!")
+		}
+	}
+
+	log.Println("loaded conversations")
 }
