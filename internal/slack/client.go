@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 
@@ -57,13 +56,7 @@ type slackChannel struct {
 }
 
 // NewClient gives you an instance of a slack client (not connected)
-func NewClient() *Client {
-	apiKey := os.Getenv("SLACK_API_TOKEN")
-
-	if len(apiKey) == 0 {
-		log.Fatal("Error: must set SLACK_API_TOKEN in env!")
-	}
-
+func NewClient(apiKey string) *Client {
 	client := Client{
 		apiKey:             apiKey,
 		connected:          false,

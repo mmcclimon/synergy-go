@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"github.com/mmcclimon/synergy-go/internal/config"
 	"github.com/mmcclimon/synergy-go/internal/slack"
 	"github.com/mmcclimon/synergy-go/pkg/event"
 )
@@ -11,9 +12,9 @@ type SlackChannel struct {
 }
 
 // NewSlack gives you a new slack channel
-func NewSlack() *SlackChannel {
+func NewSlack(cfg config.ChannelConfig) *SlackChannel {
 	channel := SlackChannel{
-		client: slack.NewClient(),
+		client: slack.NewClient(cfg.APIToken),
 	}
 
 	return &channel
