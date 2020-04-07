@@ -14,6 +14,7 @@ import (
 type Hub struct {
 	name     string
 	channels map[string]channels.Channel
+	Env      *Environment
 }
 
 // NewHub gives you a new hub. Probably it will go away once I write the
@@ -39,6 +40,7 @@ func FromFile(filename string) *Hub {
 
 	hub := Hub{
 		channels: make(map[string]channels.Channel),
+		Env:      NewEnvironment(config),
 	}
 
 	for name, cfg := range config.Channels {
