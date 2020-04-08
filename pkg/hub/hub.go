@@ -7,8 +7,10 @@ import (
 	"github.com/mmcclimon/synergy-go/internal/config"
 	"github.com/mmcclimon/synergy-go/pkg/channels"
 	"github.com/mmcclimon/synergy-go/pkg/env"
-	"github.com/mmcclimon/synergy-go/pkg/event"
 	"github.com/mmcclimon/synergy-go/pkg/reactors"
+
+	// registry
+	_ "github.com/mmcclimon/synergy-go/pkg/reactors/echo"
 )
 
 // Hub is the point of entry point for synergy
@@ -58,7 +60,7 @@ func FromFile(filename string) *Hub {
 
 // Run kicks the whole thing off. It should never exit.
 func (hub *Hub) Run() {
-	events := make(chan event.Event)
+	events := make(chan channels.Event)
 
 	for name, channel := range hub.channels {
 		log.Printf("starting channel %s\n", name)
@@ -74,7 +76,7 @@ func (hub *Hub) Run() {
 }
 
 // HandleEvent handles events, yo
-func (hub *Hub) HandleEvent(event event.Event) {
+func (hub *Hub) HandleEvent(event channels.Event) {
 	log.Printf("%s event from %s/%s: %s",
 		event.Type, event.FromChannelName, event.FromUser.Username, event.Text,
 	)

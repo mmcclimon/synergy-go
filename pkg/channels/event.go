@@ -1,6 +1,10 @@
-package event
+package channels
 
-import "github.com/mmcclimon/synergy-go/pkg/user"
+import (
+	"fmt"
+
+	"github.com/mmcclimon/synergy-go/pkg/user"
+)
 
 // Event represents a thing to be handled
 type Event struct {
@@ -13,4 +17,9 @@ type Event struct {
 	ConversationAddress string
 	FromChannelName     string
 	Handled             bool
+}
+
+// Reply sends text to the channel from whence it came.
+func (e *Event) Reply(text string) {
+	fmt.Printf("would send %s to %s on %s\n", text, e.FromUser.Username, e.FromChannelName)
 }

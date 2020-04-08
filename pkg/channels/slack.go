@@ -8,7 +8,6 @@ import (
 	"github.com/mmcclimon/synergy-go/internal/config"
 	"github.com/mmcclimon/synergy-go/internal/slack"
 	"github.com/mmcclimon/synergy-go/pkg/env"
-	"github.com/mmcclimon/synergy-go/pkg/event"
 )
 
 // SlackChannel is a slack channel.
@@ -30,7 +29,7 @@ func NewSlack(name string, cfg config.ComponentConfig, env *env.Environment) *Sl
 }
 
 // Run is the run loop.
-func (c *SlackChannel) Run(events chan<- event.Event) {
+func (c *SlackChannel) Run(events chan<- Event) {
 	rawEvents := make(chan slack.Message)
 
 	go c.client.Run(rawEvents)
@@ -56,7 +55,7 @@ func (c *SlackChannel) Run(events chan<- event.Event) {
 	}
 }
 
-func (c *SlackChannel) synergyEventFrom(slackEvent slack.Message) (*event.Event, bool) {
+func (c *SlackChannel) synergyEventFrom(slackEvent slack.Message) (*Event, bool) {
 	// I am eliding, here, some logic from proper synergy to prevent from
 	// accidentally responding to bots
 	user := c.env.UserDirectory.UserByChannelAndAddress(c.name, slackEvent.User)
@@ -82,7 +81,7 @@ func (c *SlackChannel) synergyEventFrom(slackEvent slack.Message) (*event.Event,
 	// only public channels are public
 	isPublic := text[0] == 'C'
 
-	synergyEvent := event.Event{
+	synergyEvent := Event{
 		Type:                "message",
 		Text:                text,
 		WasTargeted:         targeted,
