@@ -19,7 +19,7 @@ type SlackChannel struct {
 }
 
 // NewSlack gives you a new slack channel
-func NewSlack(name string, cfg config.ChannelConfig, env *env.Environment) *SlackChannel {
+func NewSlack(name string, cfg config.ComponentConfig, env *env.Environment) *SlackChannel {
 	channel := SlackChannel{
 		name:   name,
 		env:    env,

@@ -4,11 +4,13 @@ package config
 type Config struct {
 	StateDBFile string `toml:"state_dbfile"`
 
-	Channels map[string]ChannelConfig
+	Channels map[string]ComponentConfig
+
+	Reactors map[string]ComponentConfig
 }
 
-// ChannelConfig is a config for a channel (still in progress)
-type ChannelConfig struct {
+// ComponentConfig is a config for a channel or reactor (still in progress)
+type ComponentConfig struct {
 	Class string
 
 	// this exists on the slack channel, but wouldn't on (say) a terminal

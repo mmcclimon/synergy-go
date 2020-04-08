@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/BurntSushi/toml"
@@ -9,12 +8,14 @@ import (
 	"github.com/mmcclimon/synergy-go/pkg/channels"
 	"github.com/mmcclimon/synergy-go/pkg/env"
 	"github.com/mmcclimon/synergy-go/pkg/event"
+	"github.com/mmcclimon/synergy-go/pkg/reactors"
 )
 
 // Hub is the point of entry point for synergy
 type Hub struct {
 	name     string
 	channels map[string]channels.Channel
+	reactors map[string]reactors.Reactor
 	Env      *env.Environment
 }
 
@@ -31,23 +32,25 @@ func NewHub(name string) *Hub {
 func FromFile(filename string) *Hub {
 	var config config.Config
 
-	md, err := toml.DecodeFile(filename, &config)
+	_, err := toml.DecodeFile(filename, &config)
 	if err != nil {
 		log.Fatalf("could not read config! %s", err)
 	}
 
-	// fmt.Println(config)
-	fmt.Println(md.Undecoded())
-
 	hub := Hub{
 		channels: make(map[string]channels.Channel),
+		reactors: make(map[string]reactors.Reactor),
 		Env:      env.NewEnvironment(config),
 	}
 
 	for name, cfg := range config.Channels {
 		channel, _ := channels.Build(name, cfg.Class, cfg, hub.Env)
-
 		hub.channels[name] = channel
+	}
+
+	for name, cfg := range config.Reactors {
+		reactor, _ := reactors.Build(name, cfg.Class, cfg, hub.Env)
+		hub.reactors[name] = reactor
 	}
 
 	return &hub
@@ -65,7 +68,23 @@ func (hub *Hub) Run() {
 	for {
 		select {
 		case event := <-events:
-			fmt.Println(event)
+			hub.HandleEvent(event)
 		}
+	}
+}
+
+// HandleEvent handles events, yo
+func (hub *Hub) HandleEvent(event event.Event) {
+	log.Printf("%s event from %s/%s: %s",
+		event.Type, event.FromChannelName, event.FromUser.Username, event.Text,
+	)
+
+	listeners := make([]reactors.Listener, 0)
+	for _, reactor := range hub.reactors {
+		listeners = append(listeners, reactor.ListenersMatching(&event)...)
+	}
+
+	for _, listener := range listeners {
+		go listener(&event)
 	}
 }
