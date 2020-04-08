@@ -19,7 +19,7 @@ type arbitraryJSON = map[string]interface{}
 // methods.
 type Client struct {
 	apiKey    string
-	ourName   string
+	OurName   string
 	ourID     string
 	connected bool
 	ws        *websocket.Conn
@@ -101,7 +101,7 @@ func (client *Client) connect() {
 		log.Fatalf("Could not decode JSON: %s", err)
 	}
 
-	client.ourName = data.Self.Name
+	client.OurName = data.Self.Name
 	client.ourID = data.Self.ID
 
 	// connect to the rtm
@@ -220,7 +220,7 @@ func (client *Client) loadUsers(wg *sync.WaitGroup) {
 	}
 
 	// fix up our own data
-	client.usernames[client.ourID] = client.ourName
+	client.usernames[client.ourID] = client.OurName
 
 	log.Println("loaded users")
 }
@@ -261,4 +261,22 @@ func (client *Client) loadConversations(wg *sync.WaitGroup) {
 	}
 
 	log.Println("loaded conversations")
+}
+
+// DMChannelForAddress gives you the dm channel for a U12345 string
+func (client *Client) DMChannelForAddress(userAddr string) (string, bool) {
+	channel, ok := client.dmChannels[userAddr]
+
+	if !ok {
+		// TODO: missing a bunch of logic from real synergy, who opens it on
+		// demand
+		log.Printf("could not find dm channel for %s", userAddr)
+	}
+
+	return channel, ok
+}
+
+// UsernameFor returns the username for an address
+func (client *Client) UsernameFor(addr string) string {
+	return client.usernames[addr]
 }

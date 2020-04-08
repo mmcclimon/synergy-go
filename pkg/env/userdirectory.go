@@ -1,4 +1,4 @@
-package hub
+package env
 
 import (
 	"database/sql"
@@ -95,4 +95,15 @@ func (ud *Directory) loadIdentities() {
 func (ud *Directory) UserNamed(name string) (user.User, bool) {
 	user, ok := ud.users[name]
 	return user, ok
+}
+
+func (ud *Directory) UserByChannelAndAddress(channelName, addr string) *user.User {
+	for _, user := range ud.users {
+		ident := user.Identities[channelName]
+		if ident == addr {
+			return &user
+		}
+	}
+
+	return nil
 }

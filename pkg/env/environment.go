@@ -1,4 +1,4 @@
-package hub
+package env
 
 import (
 	"log"
@@ -74,5 +74,4 @@ func (env *Environment) maybeCreateStateTables() {
 	if err != nil {
 		log.Fatalf("could not create table: %s", err)
 	}
-
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/mmcclimon/synergy-go/internal/config"
 	"github.com/mmcclimon/synergy-go/pkg/channels"
+	"github.com/mmcclimon/synergy-go/pkg/env"
 	"github.com/mmcclimon/synergy-go/pkg/event"
 )
 
@@ -14,7 +15,7 @@ import (
 type Hub struct {
 	name     string
 	channels map[string]channels.Channel
-	Env      *Environment
+	Env      *env.Environment
 }
 
 // NewHub gives you a new hub. Probably it will go away once I write the
@@ -40,11 +41,11 @@ func FromFile(filename string) *Hub {
 
 	hub := Hub{
 		channels: make(map[string]channels.Channel),
-		Env:      NewEnvironment(config),
+		Env:      env.NewEnvironment(config),
 	}
 
 	for name, cfg := range config.Channels {
-		channel, _ := channels.Build(cfg.Class, cfg)
+		channel, _ := channels.Build(name, cfg.Class, cfg, hub.Env)
 
 		hub.channels[name] = channel
 	}

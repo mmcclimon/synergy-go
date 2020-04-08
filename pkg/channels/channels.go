@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/mmcclimon/synergy-go/internal/config"
+	"github.com/mmcclimon/synergy-go/pkg/env"
 	"github.com/mmcclimon/synergy-go/pkg/event"
 )
 
@@ -14,10 +15,10 @@ type Channel interface {
 }
 
 // Build gives you a channel based on a well-known name
-func Build(wellKnown string, cfg config.ChannelConfig) (Channel, error) {
+func Build(name, wellKnown string, cfg config.ChannelConfig, env *env.Environment) (Channel, error) {
 	switch wellKnown {
 	case "SlackChannel":
-		return NewSlack(cfg), nil
+		return NewSlack(name, cfg, env), nil
 	default:
 		log.Fatalf("unknown channel name %s", wellKnown)
 		return nil, errors.New("unreachable")
