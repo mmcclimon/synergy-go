@@ -14,8 +14,12 @@ type EchoReactor struct {
 	name string
 }
 
-// NewEcho gives you a new echo reactor
-func NewEcho(name string, cfg config.ComponentConfig, env *env.Environment) *EchoReactor {
+func init() {
+	reactors.RegisterReactor("EchoReactor", New)
+}
+
+// New gives you a new echo reactor
+func New(name string, cfg config.ComponentConfig, env *env.Environment) reactors.Reactor {
 	self := EchoReactor{
 		name: name,
 	}
