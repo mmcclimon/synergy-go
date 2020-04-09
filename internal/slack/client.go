@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,6 +15,9 @@ import (
 )
 
 type arbitraryJSON = map[string]interface{}
+
+// CannotDMBot is magic string to be used later
+const CannotDMBot = "CANNOT_DM_BOT"
 
 // Client is a slack client, with a bunch of internal fields and probably some
 // methods.
@@ -33,12 +37,15 @@ type Client struct {
 
 // Message represents a raw json message from slack
 type Message struct {
+	OK      bool
 	Type    string
 	TS      string
 	Subtype string
 	Channel string
 	Text    string
 	User    string
+	BotID   string `json:"bot_id"`
+	ReplyTo uint   `json:"reply_to"`
 }
 
 type slackUser struct {
@@ -202,6 +209,19 @@ func (client *Client) apiCallForm(endpoint string, postData map[string]string) a
 	return client.apiCall(req)
 }
 
+func (client *Client) apiCallJSON(endpoint string, postData arbitraryJSON) (arbitraryJSON, error) {
+	encoded, err := json.Marshal(postData)
+
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling json to send to slack: %v", err)
+	}
+
+	req, _ := http.NewRequest("POST", apiURL(endpoint), bytes.NewBuffer(encoded))
+	req.Header.Set("Content-Type", "application/json")
+
+	return client.apiCall(req), nil
+}
+
 func (client *Client) loadUsers(wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -264,19 +284,68 @@ func (client *Client) loadConversations(wg *sync.WaitGroup) {
 }
 
 // DMChannelForAddress gives you the dm channel for a U12345 string
-func (client *Client) DMChannelForAddress(userAddr string) (string, bool) {
-	channel, ok := client.dmChannels[userAddr]
+func (client *Client) DMChannelForAddress(addr string) (string, bool) {
+	channelID, ok := client.dmChannels[addr]
 
-	if !ok {
-		// TODO: missing a bunch of logic from real synergy, who opens it on
-		// demand
-		log.Printf("could not find dm channel for %s", userAddr)
+	if ok {
+		return channelID, ok
 	}
 
-	return channel, ok
+	// try to get it!
+	data, err := client.apiCallJSON("conversations.open", arbitraryJSON{"users": addr})
+
+	if err != nil {
+		log.Printf("could not find dm channel for %s", addr)
+		return "", false
+	}
+
+	var got struct {
+		Ok      bool
+		Error   string
+		Channel struct {
+			ID string
+		}
+	}
+
+	_ = mapstructure.Decode(data, &got)
+
+	fmt.Printf("%#v\n", got)
+
+	if got.Ok {
+		channelID = got.Channel.ID
+	} else if got.Error == "cannot_dm_bot" {
+		channelID = CannotDMBot
+	} else {
+		log.Printf("got weird error from slack: %#v\n", data)
+		return "", false
+	}
+
+	client.dmChannels[addr] = channelID
+	return channelID, true
 }
 
 // UsernameFor returns the username for an address
 func (client *Client) UsernameFor(addr string) string {
 	return client.usernames[addr]
+}
+
+func (client *Client) sendFrame(data interface{}) {
+	encoded, err := json.Marshal(data)
+
+	if err != nil {
+		log.Println("error marshalling send data", err)
+		return
+	}
+
+	client.ws.WriteMessage(websocket.TextMessage, encoded)
+}
+
+func (client *Client) SendMessage(channel, text string) {
+	// bunch of complexity elided here
+	data := arbitraryJSON{
+		"type":    "message",
+		"channel": channel,
+		"text":    text,
+	}
+	client.sendFrame(data)
 }

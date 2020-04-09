@@ -2,7 +2,6 @@ package reactors
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/mmcclimon/synergy-go/internal/config"
@@ -10,12 +9,22 @@ import (
 	"github.com/mmcclimon/synergy-go/pkg/env"
 )
 
-// Listener is a listener
-type Listener = func(*channels.Event)
-
 // Reactor is a reactor...I'm still working out its interface.
 type Reactor interface {
-	ListenersMatching(*channels.Event) []Listener
+	HandlersMatching(*channels.Event) []Handler
+}
+
+// Handler handles events: it's a shortcut for a unary function taking an
+// event and returning void
+type Handler = func(*channels.Event)
+
+// MatchFunc takes an event and returns a bool as to whether it matches or not
+type MatchFunc = func(*channels.Event) bool
+
+// Listener is a struct that has a handler and a matchfunc
+type Listener struct {
+	Handler Handler
+	Matcher MatchFunc
 }
 
 // ReactorBuilder is just a convenience type for a .New function
@@ -25,7 +34,7 @@ var registry = make(map[string]ReactorBuilder)
 
 // RegisterReactor lets reactors register themselves
 func RegisterReactor(wellKnown string, f ReactorBuilder) {
-	fmt.Printf("registering reactor %s\n", wellKnown)
+	log.Printf("registering reactor %s\n", wellKnown)
 	registry[wellKnown] = f
 }
 

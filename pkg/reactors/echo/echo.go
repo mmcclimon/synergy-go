@@ -11,26 +11,49 @@ import (
 
 // EchoReactor is a reactor that echoes
 type EchoReactor struct {
-	name string
+	name      string
+	listeners map[string]reactors.Listener
 }
 
 func init() {
 	reactors.RegisterReactor("EchoReactor", New)
+
 }
 
 // New gives you a new echo reactor
 func New(name string, cfg config.ComponentConfig, env *env.Environment) reactors.Reactor {
-	self := EchoReactor{
-		name: name,
+	r := EchoReactor{
+		name:      name,
+		listeners: make(map[string]reactors.Listener),
 	}
 
-	return &self
+	r.registerHandlers()
+
+	return &r
 }
 
-// ListenersMatching returns a slice of listeners matching this event
-func (r *EchoReactor) ListenersMatching(event *channels.Event) []reactors.Listener {
-	handlers := make([]func(*channels.Event), 0)
-	handlers = append(handlers, r.handleEcho)
+func (r *EchoReactor) registerHandlers() {
+	r.registerHandler("echo", r.handleEcho, func(e *channels.Event) bool {
+		return e.WasTargeted
+	})
+}
+
+func (r *EchoReactor) registerHandler(name string, handler reactors.Handler, matcher reactors.MatchFunc) {
+	r.listeners[name] = reactors.Listener{
+		Matcher: matcher,
+		Handler: handler,
+	}
+}
+
+// HandlersMatching returns a slice of listeners matching this event
+func (r *EchoReactor) HandlersMatching(event *channels.Event) []reactors.Handler {
+	handlers := make([]reactors.Handler, 0)
+
+	for _, listener := range r.listeners {
+		if listener.Matcher(event) {
+			handlers = append(handlers, listener.Handler)
+		}
+	}
 
 	return handlers
 }

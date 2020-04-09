@@ -10,7 +10,9 @@ import (
 
 // Channel is a thing on which we can send and receive messages
 type Channel interface {
+	Name() string
 	Run(chan<- Event)
+	SendMessage(string, string)
 }
 
 // Build gives you a channel based on a well-known name

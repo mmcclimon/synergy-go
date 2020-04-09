@@ -1,6 +1,7 @@
 package channels
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -28,6 +29,9 @@ func NewSlack(name string, cfg config.ComponentConfig, env *env.Environment) *Sl
 	return &channel
 }
 
+// Name returns the name of this channel
+func (c *SlackChannel) Name() string { return c.name }
+
 // Run is the run loop.
 func (c *SlackChannel) Run(events chan<- Event) {
 	rawEvents := make(chan slack.Message)
@@ -39,6 +43,19 @@ func (c *SlackChannel) Run(events chan<- Event) {
 	for {
 		select {
 		case slackEvent := <-rawEvents:
+			fmt.Printf("%#v\n", slackEvent)
+
+			if slackEvent.Type == "" && slackEvent.ReplyTo != 0 {
+				if !slackEvent.OK {
+					log.Printf("failed to send response: %#v", slackEvent)
+				}
+				continue
+			}
+
+			if slackEvent.BotID != "" {
+				continue
+			}
+
 			synergyEvent, ok := c.synergyEventFrom(slackEvent)
 
 			if !ok {
@@ -56,8 +73,15 @@ func (c *SlackChannel) Run(events chan<- Event) {
 }
 
 func (c *SlackChannel) synergyEventFrom(slackEvent slack.Message) (*Event, bool) {
-	// I am eliding, here, some logic from proper synergy to prevent from
-	// accidentally responding to bots
+	ok := strings.HasPrefix(slackEvent.Channel, "G")
+
+	if !ok {
+		privateAddr, ok := c.client.DMChannelForAddress(slackEvent.User)
+		if !ok || privateAddr == slack.CannotDMBot {
+			return nil, false
+		}
+	}
+
 	user := c.env.UserDirectory.UserByChannelAndAddress(c.name, slackEvent.User)
 
 	text := c.decodeSlackFormatting(slackEvent.Text)
@@ -74,19 +98,19 @@ func (c *SlackChannel) synergyEventFrom(slackEvent slack.Message) (*Event, bool)
 	}
 
 	// everything in DM is targeted
-	if text[0] == 'D' {
+	if slackEvent.Channel[0] == 'D' {
 		targeted = true
 	}
 
 	// only public channels are public
-	isPublic := text[0] == 'C'
+	isPublic := slackEvent.Channel[0] == 'C'
 
 	synergyEvent := Event{
 		Type:                "message",
 		Text:                text,
 		WasTargeted:         targeted,
 		IsPublic:            isPublic,
-		FromChannelName:     c.name,
+		FromChannel:         c,
 		FromAddress:         slackEvent.User,
 		FromUser:            user,
 		ConversationAddress: slackEvent.Channel,
@@ -129,4 +153,13 @@ func (c *SlackChannel) decodeSlackFormatting(text string) string {
 	text = strings.ReplaceAll(text, "&amp;", "&")
 
 	return text
+}
+
+// SendMessage sends a message
+func (c *SlackChannel) SendMessage(target, text string) {
+	text = strings.ReplaceAll(text, "<", "&lt;")
+	text = strings.ReplaceAll(text, ">", "&gt;")
+	text = strings.ReplaceAll(text, "&", "&amp;")
+
+	c.client.SendMessage(target, text)
 }

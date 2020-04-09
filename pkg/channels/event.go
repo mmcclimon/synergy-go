@@ -1,8 +1,6 @@
 package channels
 
 import (
-	"fmt"
-
 	"github.com/mmcclimon/synergy-go/pkg/user"
 )
 
@@ -15,11 +13,19 @@ type Event struct {
 	WasTargeted         bool
 	FromAddress         string
 	ConversationAddress string
-	FromChannelName     string
+	FromChannel         Channel
 	Handled             bool
 }
 
 // Reply sends text to the channel from whence it came.
 func (e *Event) Reply(text string) {
-	fmt.Printf("would send %s to %s on %s\n", text, e.FromUser.Username, e.FromChannelName)
+	prefix := ""
+
+	if e.FromUser != nil && e.IsPublic {
+		prefix = e.FromUser.Username + ": "
+	}
+
+	text = prefix + text
+
+	e.FromChannel.SendMessage(e.ConversationAddress, text)
 }

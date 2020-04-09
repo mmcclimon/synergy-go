@@ -78,15 +78,15 @@ func (hub *Hub) Run() {
 // HandleEvent handles events, yo
 func (hub *Hub) HandleEvent(event channels.Event) {
 	log.Printf("%s event from %s/%s: %s",
-		event.Type, event.FromChannelName, event.FromUser.Username, event.Text,
+		event.Type, event.FromChannel.Name(), event.FromUser.Username, event.Text,
 	)
 
-	listeners := make([]reactors.Listener, 0)
+	handlers := make([]reactors.Handler, 0)
 	for _, reactor := range hub.reactors {
-		listeners = append(listeners, reactor.ListenersMatching(&event)...)
+		handlers = append(handlers, reactor.HandlersMatching(&event)...)
 	}
 
-	for _, listener := range listeners {
-		go listener(&event)
+	for _, handler := range handlers {
+		go handler(&event)
 	}
 }
