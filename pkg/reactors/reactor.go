@@ -16,7 +16,7 @@ type Reactor interface {
 
 // Handler handles events: it's a shortcut for a unary function taking an
 // event and returning void
-type Handler = func(*channels.Event)
+type Handler = func(*channels.Event, chan<- error)
 
 // MatchFunc takes an event and returns a bool as to whether it matches or not
 type MatchFunc = func(*channels.Event) bool

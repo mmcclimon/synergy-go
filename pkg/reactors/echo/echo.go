@@ -58,7 +58,7 @@ func (r *EchoReactor) HandlersMatching(event *channels.Event) []reactors.Handler
 	return handlers
 }
 
-func (r *EchoReactor) handleEcho(event *channels.Event) {
+func (r *EchoReactor) handleEcho(event *channels.Event, errors chan<- error) {
 	text := event.Text
 	username := event.FromUser.Username
 	event.Reply(fmt.Sprintf("I heard you, %s, when you said: %s", username, text))

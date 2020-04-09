@@ -61,6 +61,7 @@ func FromFile(filename string) *Hub {
 // Run kicks the whole thing off. It should never exit.
 func (hub *Hub) Run() {
 	events := make(chan channels.Event)
+	errors := make(chan error)
 
 	for name, channel := range hub.channels {
 		log.Printf("starting channel %s\n", name)
@@ -68,12 +69,12 @@ func (hub *Hub) Run() {
 	}
 
 	for event := range events {
-		hub.HandleEvent(event)
+		hub.HandleEvent(event, errors)
 	}
 }
 
 // HandleEvent handles events, yo
-func (hub *Hub) HandleEvent(event channels.Event) {
+func (hub *Hub) HandleEvent(event channels.Event, errors chan error) {
 	log.Printf("%s event from %s/%s: %s",
 		event.Type, event.FromChannel.Name(), event.FromUser.Username, event.Text,
 	)
@@ -84,6 +85,10 @@ func (hub *Hub) HandleEvent(event channels.Event) {
 	}
 
 	for _, handler := range handlers {
-		go handler(&event)
+		go handler(&event, errors)
+	}
+
+	for err := range errors {
+		log.Println("caught error with reactor:", err)
 	}
 }
