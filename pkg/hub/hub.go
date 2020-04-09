@@ -67,11 +67,8 @@ func (hub *Hub) Run() {
 		go channel.Run(events)
 	}
 
-	for {
-		select {
-		case event := <-events:
-			hub.HandleEvent(event)
-		}
+	for event := range events {
+		hub.HandleEvent(event)
 	}
 }
 
@@ -81,7 +78,7 @@ func (hub *Hub) HandleEvent(event channels.Event) {
 		event.Type, event.FromChannel.Name(), event.FromUser.Username, event.Text,
 	)
 
-	handlers := make([]reactors.Handler, 0)
+	var handlers []reactors.Handler
 	for _, reactor := range hub.reactors {
 		handlers = append(handlers, reactor.HandlersMatching(&event)...)
 	}

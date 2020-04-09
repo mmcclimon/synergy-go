@@ -1,7 +1,6 @@
 package channels
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -40,35 +39,32 @@ func (c *SlackChannel) Run(events chan<- Event) {
 
 	// grab our raw events off of the wire, create synergy events, and pipe them
 	// back through to the hub to be handled
-	for {
-		select {
-		case slackEvent := <-rawEvents:
-			fmt.Printf("%#v\n", slackEvent)
+	for slackEvent := range rawEvents {
+		// fmt.Printf("%#v\n", slackEvent)
 
-			if slackEvent.Type == "" && slackEvent.ReplyTo != 0 {
-				if !slackEvent.OK {
-					log.Printf("failed to send response: %#v", slackEvent)
-				}
-				continue
+		if slackEvent.Type == "" && slackEvent.ReplyTo != 0 {
+			if !slackEvent.OK {
+				log.Printf("failed to send response: %#v", slackEvent)
 			}
-
-			if slackEvent.BotID != "" {
-				continue
-			}
-
-			synergyEvent, ok := c.synergyEventFrom(slackEvent)
-
-			if !ok {
-				log.Printf(
-					"couldn't convert a %s message to channel %s, dropping it",
-					slackEvent.Type,
-					slackEvent.Channel,
-				)
-				continue
-			}
-
-			events <- *synergyEvent
+			continue
 		}
+
+		if slackEvent.BotID != "" {
+			continue
+		}
+
+		synergyEvent, ok := c.synergyEventFrom(slackEvent)
+
+		if !ok {
+			log.Printf(
+				"couldn't convert a %s message to channel %s, dropping it",
+				slackEvent.Type,
+				slackEvent.Channel,
+			)
+			continue
+		}
+
+		events <- *synergyEvent
 	}
 }
 

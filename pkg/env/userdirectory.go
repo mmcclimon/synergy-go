@@ -48,7 +48,6 @@ func (ud *Directory) loadUsers() {
 
 		username := raw.Username
 
-		// I could make a constructor for this, but also, meh
 		ud.users[username] = user.User{
 			Username:   raw.Username,
 			LPID:       raw.LPID.String,

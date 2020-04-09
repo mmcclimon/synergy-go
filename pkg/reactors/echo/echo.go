@@ -47,7 +47,7 @@ func (r *EchoReactor) registerHandler(name string, handler reactors.Handler, mat
 
 // HandlersMatching returns a slice of listeners matching this event
 func (r *EchoReactor) HandlersMatching(event *channels.Event) []reactors.Handler {
-	handlers := make([]reactors.Handler, 0)
+	var handlers []reactors.Handler
 
 	for _, listener := range r.listeners {
 		if listener.Matcher(event) {
