@@ -42,13 +42,6 @@ func (c *SlackChannel) Run(events chan<- Event) {
 	for slackEvent := range rawEvents {
 		// fmt.Printf("%#v\n", slackEvent)
 
-		if slackEvent.Type == "" && slackEvent.ReplyTo != 0 {
-			if !slackEvent.OK {
-				log.Printf("failed to send response: %#v", slackEvent)
-			}
-			continue
-		}
-
 		if slackEvent.BotID != "" {
 			continue
 		}

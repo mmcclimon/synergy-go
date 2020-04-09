@@ -138,10 +138,9 @@ func (client *Client) Run(rawEvents chan<- Message) {
 
 	defer client.ws.Close()
 
-	// is it bad form to reuse this? maybe!
-	var msg Message
-
 	for {
+		var msg Message
+
 		err := client.ws.ReadJSON(&msg)
 
 		if err != nil {
@@ -151,6 +150,11 @@ func (client *Client) Run(rawEvents chan<- Message) {
 
 		// only handle message types
 		if msg.Type != "message" {
+			continue
+		}
+
+		// no responding to bots
+		if msg.BotID != "" {
 			continue
 		}
 
@@ -340,6 +344,7 @@ func (client *Client) sendFrame(data interface{}) {
 	client.ws.WriteMessage(websocket.TextMessage, encoded)
 }
 
+// SendMessage sends a plain-text reply down the websocket
 func (client *Client) SendMessage(channel, text string) {
 	// bunch of complexity elided here
 	data := arbitraryJSON{
