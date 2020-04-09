@@ -6,24 +6,9 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Hub is the point of entry point for synergy
-type Hub struct {
-	name     string
-	channels map[string]Channel
-	reactors map[string]Reactor
-	Env      *Environment
-}
-
-// NewHub gives you a new hub. Probably it will go away once I write the
-// config loader.
-func NewHub(name string) *Hub {
-	hub := Hub{name: name}
-	hub.channels = make(map[string]Channel)
-	// hub.channels["slack"] = channels.NewSlack(nil)
-	return &hub
-}
-
-// FromFile gives you a new hub based on a .toml file
+// FromFile gives you a new hub based on a .toml file. This is the main entry
+// point for our package: call this, then call Run() on the thing it gives
+// you.
 func FromFile(filename string) *Hub {
 	var config Config
 
@@ -49,39 +34,4 @@ func FromFile(filename string) *Hub {
 	}
 
 	return &hub
-}
-
-// Run kicks the whole thing off. It should never exit.
-func (hub *Hub) Run() {
-	events := make(chan Event)
-	errors := make(chan error)
-
-	for name, channel := range hub.channels {
-		log.Printf("starting channel %s\n", name)
-		go channel.Run(events)
-	}
-
-	for event := range events {
-		hub.HandleEvent(event, errors)
-	}
-}
-
-// HandleEvent handles events, yo
-func (hub *Hub) HandleEvent(event Event, errors chan error) {
-	log.Printf("%s event from %s/%s: %s",
-		event.Type, event.FromChannel.Name(), event.FromUser.Username, event.Text,
-	)
-
-	var handlers []Handler
-	for _, reactor := range hub.reactors {
-		handlers = append(handlers, reactor.HandlersMatching(&event)...)
-	}
-
-	for _, handler := range handlers {
-		go handler(&event, errors)
-	}
-
-	for err := range errors {
-		log.Println("caught error with reactor:", err)
-	}
 }

@@ -15,15 +15,18 @@ type SlackChannel struct {
 	env    *Environment
 }
 
-// NewSlack gives you a new slack channel
-func NewSlack(name string, cfg ComponentConfig, env *Environment) *SlackChannel {
-	channel := SlackChannel{
-		name:   name,
-		env:    env,
-		client: slack.NewClient(cfg.APIToken),
-	}
+func init() {
+	RegisterChannel("SlackChannel",
+		func(name string, cfg ComponentConfig, env *Environment) Channel {
+			channel := SlackChannel{
+				name:   name,
+				env:    env,
+				client: slack.NewClient(cfg.APIToken),
+			}
 
-	return &channel
+			return &channel
+		},
+	)
 }
 
 // Name returns the name of this channel
