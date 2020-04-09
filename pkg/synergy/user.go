@@ -1,4 +1,4 @@
-package user
+package synergy
 
 // User represents a user.
 type User struct {

@@ -1,24 +1,22 @@
-package channels
+package synergy
 
 import (
 	"log"
 	"regexp"
 	"strings"
 
-	"github.com/mmcclimon/synergy-go/internal/config"
 	"github.com/mmcclimon/synergy-go/internal/slack"
-	"github.com/mmcclimon/synergy-go/pkg/env"
 )
 
 // SlackChannel is a slack channel.
 type SlackChannel struct {
 	name   string
 	client *slack.Client
-	env    *env.Environment
+	env    *Environment
 }
 
 // NewSlack gives you a new slack channel
-func NewSlack(name string, cfg config.ComponentConfig, env *env.Environment) *SlackChannel {
+func NewSlack(name string, cfg ComponentConfig, env *Environment) *SlackChannel {
 	channel := SlackChannel{
 		name:   name,
 		env:    env,

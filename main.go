@@ -1,8 +1,8 @@
 package main
 
-import "github.com/mmcclimon/synergy-go/pkg/hub"
+import "github.com/mmcclimon/synergy-go/pkg/synergy"
 
 func main() {
-	hub := hub.FromFile("config.toml")
+	hub := synergy.FromFile("config.toml")
 	hub.Run()
 }

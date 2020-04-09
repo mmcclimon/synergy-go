@@ -1,11 +1,10 @@
-package env
+package synergy
 
 import (
 	"log"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // sql driver
-	"github.com/mmcclimon/synergy-go/internal/config"
 )
 
 // Environment represents global synergy things
@@ -15,7 +14,7 @@ type Environment struct {
 }
 
 // NewEnvironment gives you a new environment (handle onto the db, basically
-func NewEnvironment(config config.Config) *Environment {
+func NewEnvironment(config Config) *Environment {
 	db, err := sqlx.Open("sqlite3", config.StateDBFile)
 	if err != nil {
 		log.Fatalf("could not open sqlite db: %s", err)

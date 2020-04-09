@@ -1,13 +1,9 @@
-package channels
-
-import (
-	"github.com/mmcclimon/synergy-go/pkg/user"
-)
+package synergy
 
 // Event represents a thing to be handled
 type Event struct {
 	Type                string
-	FromUser            *user.User
+	FromUser            *User
 	Text                string
 	IsPublic            bool
 	WasTargeted         bool

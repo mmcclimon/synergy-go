@@ -1,16 +1,14 @@
-package env
+package synergy
 
 import (
 	"database/sql"
 	"log"
-
-	"github.com/mmcclimon/synergy-go/pkg/user"
 )
 
 // Directory represents a directory of users
 type Directory struct {
 	env   *Environment
-	users map[string]user.User
+	users map[string]User
 }
 
 type rawUser struct {
@@ -26,7 +24,7 @@ type rawUser struct {
 func NewDirectory(env *Environment) *Directory {
 	return &Directory{
 		env:   env,
-		users: make(map[string]user.User),
+		users: make(map[string]User),
 	}
 }
 
@@ -48,7 +46,7 @@ func (ud *Directory) loadUsers() {
 
 		username := raw.Username
 
-		ud.users[username] = user.User{
+		ud.users[username] = User{
 			Username:   raw.Username,
 			LPID:       raw.LPID.String,
 			IsMaster:   raw.IsMaster.Bool,
@@ -91,12 +89,12 @@ func (ud *Directory) loadIdentities() {
 }
 
 // UserNamed gives you the user for a name (if we have one)
-func (ud *Directory) UserNamed(name string) (user.User, bool) {
+func (ud *Directory) UserNamed(name string) (User, bool) {
 	user, ok := ud.users[name]
 	return user, ok
 }
 
-func (ud *Directory) UserByChannelAndAddress(channelName, addr string) *user.User {
+func (ud *Directory) UserByChannelAndAddress(channelName, addr string) *User {
 	for _, user := range ud.users {
 		ident := user.Identities[channelName]
 		if ident == addr {

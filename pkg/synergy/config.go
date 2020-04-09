@@ -1,4 +1,4 @@
-package config
+package synergy
 
 // Config is a config; it has some data in it
 type Config struct {
