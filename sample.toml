@@ -1,0 +1,8 @@
+state_dbfile = "synergy.sqlite"
+
+[channels.slack_fm]
+class = "SlackChannel"
+apiToken = "your-api-key"
+
+[reactors.echo]
+class = "EchoReactor"
