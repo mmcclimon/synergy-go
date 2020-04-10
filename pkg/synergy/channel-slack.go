@@ -18,10 +18,12 @@ type SlackChannel struct {
 func init() {
 	RegisterChannel("SlackChannel",
 		func(name string, cfg ComponentConfig, env *Environment) Channel {
+			client := slack.Client{APIKey: cfg.APIToken}
+
 			channel := SlackChannel{
 				name:   name,
 				env:    env,
-				client: slack.NewClient(cfg.APIToken),
+				client: &client,
 			}
 
 			return &channel

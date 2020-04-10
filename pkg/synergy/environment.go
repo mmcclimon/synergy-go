@@ -23,7 +23,7 @@ func NewEnvironment(config Config) *Environment {
 	env := Environment{db: db}
 
 	// circular reference here is useful, and they're singletons so won't leak
-	env.UserDirectory = NewDirectory(&env)
+	env.UserDirectory = &Directory{env: &env}
 
 	env.maybeCreateStateTables()
 	env.UserDirectory.loadUsers()

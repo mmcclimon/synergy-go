@@ -11,30 +11,25 @@ type Directory struct {
 	users map[string]User
 }
 
-type rawUser struct {
-	Username  string
-	LPID      sql.NullString `db:"lp_id"`
-	IsMaster  sql.NullBool   `db:"is_master"`
-	IsVirtual sql.NullBool   `db:"is_virtual"`
-	IsDeleted sql.NullBool   `db:"is_deleted"`
-}
-
-// NewDirectory gives you a new user directory. Note: we have to inject the db
-// here!
-func NewDirectory(env *Environment) *Directory {
-	return &Directory{
-		env:   env,
-		users: make(map[string]User),
-	}
-}
-
 func (ud *Directory) loadUsers() {
+	if ud.users == nil {
+		ud.users = make(map[string]User)
+	}
+
 	rows, err := ud.env.db.Queryx("select * from users")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer rows.Close()
+
+	type rawUser struct {
+		Username  string
+		LPID      sql.NullString `db:"lp_id"`
+		IsMaster  sql.NullBool   `db:"is_master"`
+		IsVirtual sql.NullBool   `db:"is_virtual"`
+		IsDeleted sql.NullBool   `db:"is_deleted"`
+	}
 
 	for rows.Next() {
 		var raw rawUser
@@ -94,6 +89,7 @@ func (ud *Directory) UserNamed(name string) (User, bool) {
 	return user, ok
 }
 
+// UserByChannelAndAddress gives you a user, given a channel name and address
 func (ud *Directory) UserByChannelAndAddress(channelName, addr string) *User {
 	for _, user := range ud.users {
 		ident := user.Identities[channelName]

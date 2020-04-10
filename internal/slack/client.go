@@ -22,7 +22,7 @@ const CannotDMBot = "CANNOT_DM_BOT"
 // Client is a slack client, with a bunch of internal fields and probably some
 // methods.
 type Client struct {
-	apiKey    string
+	APIKey    string
 	OurName   string
 	ourID     string
 	connected bool
@@ -62,24 +62,16 @@ type slackChannel struct {
 	IsGroup   bool   `mapstructure:"is_group"`
 }
 
-// NewClient gives you an instance of a slack client (not connected)
-func NewClient(apiKey string) *Client {
-	client := Client{
-		apiKey:             apiKey,
-		connected:          false,
-		usernames:          make(map[string]string),
-		channels:           make(map[string]string),
-		dmChannels:         make(map[string]string),
-		groupConversations: make(map[string]string),
-	}
-
-	return &client
-}
-
 func (client *Client) connect() {
+	// don't require consumers to make a bunch of empty maps
+	client.usernames = make(map[string]string)
+	client.channels = make(map[string]string)
+	client.dmChannels = make(map[string]string)
+	client.groupConversations = make(map[string]string)
+
 	u, _ := url.Parse("https://slack.com/api/rtm.connect")
 	q := u.Query()
-	q.Set("token", client.apiKey)
+	q.Set("token", client.APIKey)
 	u.RawQuery = q.Encode()
 
 	res, err := http.Get(u.String())
@@ -178,7 +170,7 @@ func apiURL(method string) string {
 }
 
 func (client *Client) apiAuthHeader() string {
-	return fmt.Sprintf("Bearer %s", client.apiKey)
+	return fmt.Sprintf("Bearer %s", client.APIKey)
 }
 
 // probably this should also return an err, but will ignore for now
